@@ -2,8 +2,8 @@ package dev.meiny.meinysgui.client;
 
 import dev.meiny.meinysgui.client.config.MeinysGuiConfig;
 import dev.meiny.meinysgui.network.SortPayload;
-import dev.meiny.meinysgui.network.SortPayloadV2;
 import dev.meiny.meinysgui.sort.HotbarMode;
+import dev.meiny.meinysgui.sort.SortMode;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -14,15 +14,14 @@ public final class InventoryActions {
 
 	public static void sort(Minecraft client, boolean playerInventory) {
 		HotbarMode hotbarMode = playerInventory ? MeinysGuiConfig.get().sortHotbar : HotbarMode.IGNORE;
+		SortMode sortMode = MeinysGuiConfig.get().sortMode;
 
-		if (ClientPlayNetworking.canSend(SortPayloadV2.TYPE)) {
-			ClientPlayNetworking.send(new SortPayloadV2(playerInventory, hotbarMode));
-		} else if (hotbarMode == HotbarMode.IGNORE && ClientPlayNetworking.canSend(SortPayload.TYPE)) {
-			ClientPlayNetworking.send(new SortPayload(playerInventory));
+		if (ClientPlayNetworking.canSend(SortPayload.TYPE)) {
+			ClientPlayNetworking.send(new SortPayload(playerInventory, hotbarMode, sortMode));
 		} else if (playerInventory && client.gui.screen() instanceof CreativeModeInventoryScreen) {
-			CreativeSorter.sort(client, hotbarMode);
+			CreativeSorter.sort(client, hotbarMode, sortMode);
 		} else {
-			ClientSorter.sort(client, playerInventory, hotbarMode);
+			ClientSorter.sort(client, playerInventory, hotbarMode, sortMode);
 		}
 	}
 

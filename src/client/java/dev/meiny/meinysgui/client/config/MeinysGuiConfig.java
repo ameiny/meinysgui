@@ -10,6 +10,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import dev.meiny.meinysgui.MeinysGUI;
 import dev.meiny.meinysgui.sort.HotbarMode;
+import dev.meiny.meinysgui.sort.SortMode;
 import net.fabricmc.loader.api.FabricLoader;
 
 public final class MeinysGuiConfig {
@@ -22,6 +23,7 @@ public final class MeinysGuiConfig {
 	public boolean depositAllHotbar = false;
 	public boolean depositMatchingHotbar = false;
 	public ButtonMode buttons = ButtonMode.ALL;
+	public SortMode sortMode = SortMode.DEFAULT;
 
 	public static MeinysGuiConfig get() {
 		return instance;
@@ -47,6 +49,9 @@ public final class MeinysGuiConfig {
 		}
 		if (instance.buttons == null) {
 			instance.buttons = ButtonMode.ALL;
+		}
+		if (instance.sortMode == null) {
+			instance.sortMode = SortMode.DEFAULT;
 		}
 	}
 

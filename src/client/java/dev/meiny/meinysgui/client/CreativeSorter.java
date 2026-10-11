@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 import dev.meiny.meinysgui.sort.HotbarMode;
 import dev.meiny.meinysgui.sort.InventorySorter;
+import dev.meiny.meinysgui.sort.SortMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -18,7 +19,7 @@ public final class CreativeSorter {
 
     private CreativeSorter() { }
 
-    public static void sort(Minecraft client, HotbarMode hotbarMode) {
+    public static void sort(Minecraft client, HotbarMode hotbarMode, SortMode sortMode) {
         LocalPlayer player = client.player;
         if (player == null || client.gameMode == null || !player.hasInfiniteMaterials()) {
             return;
@@ -28,7 +29,7 @@ public final class CreativeSorter {
         }
 
         for (int[] group : groups(hotbarMode)) {
-            sortGroup(client, player.getInventory(), group);
+            sortGroup(client, player.getInventory(), group, sortMode);
         }
     }
 
@@ -40,7 +41,7 @@ public final class CreativeSorter {
         };
     }
 
-    private static void sortGroup(Minecraft client, Inventory inventory, int[] indices) {
+    private static void sortGroup(Minecraft client, Inventory inventory, int[] indices, SortMode sortMode) {
         List<ItemStack> stacks = new ArrayList<>();
         for (int index : indices) {
             ItemStack stack = inventory.getItem(index);
@@ -49,7 +50,7 @@ public final class CreativeSorter {
             }
         }
 
-        List<ItemStack> sorted = InventorySorter.mergeAndSort(stacks);
+        List<ItemStack> sorted = InventorySorter.mergeAndSort(stacks, sortMode);
 
         for (int position = 0; position < indices.length; position++) {
             int index = indices[position];

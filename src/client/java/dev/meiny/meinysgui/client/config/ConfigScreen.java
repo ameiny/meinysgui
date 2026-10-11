@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import dev.meiny.meinysgui.sort.HotbarMode;
+import dev.meiny.meinysgui.sort.SortMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -39,7 +40,9 @@ public class ConfigScreen extends OptionsSubScreen {
 		list.addHeader(header("meinysgui.config.buttons"));
 		list.addSmall(List.<AbstractWidget>of(
 				cycleButton("meinysgui.config.buttons.show", ButtonMode.values(),
-						() -> config.buttons, value -> config.buttons = value, ConfigScreen::enumId)));
+						() -> config.buttons, value -> config.buttons = value, ConfigScreen::enumId),
+				cycleButton("meinysgui.config.buttons.sort_mode", SortMode.values(),
+						() -> config.sortMode, value -> config.sortMode = value, ConfigScreen::enumId)));
 	}
 
 	@Override

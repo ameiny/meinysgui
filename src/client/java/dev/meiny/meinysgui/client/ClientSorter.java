@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import dev.meiny.meinysgui.sort.HotbarMode;
 import dev.meiny.meinysgui.sort.InventorySorter;
+import dev.meiny.meinysgui.sort.SortMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -15,12 +16,14 @@ public final class ClientSorter {
 	private final List<Integer> menuSlotIds = new ArrayList<>();
 	private final List<ItemStack> simulated = new ArrayList<>();
 	private final List<Integer> clicks = new ArrayList<>();
+	private final SortMode sortMode;
 	private ItemStack cursor = ItemStack.EMPTY;
 
-	private ClientSorter() {
+	private ClientSorter(SortMode sortMode) {
+		this.sortMode = sortMode;
 	}
 
-	public static void sort(Minecraft client, boolean playerInventory, HotbarMode hotbarMode) {
+	public static void sort(Minecraft client, boolean playerInventory, HotbarMode hotbarMode, SortMode sortMode) {
 		Player player = client.player;
 		if (player == null || client.gameMode == null || player.isSpectator()) {
 			return;
@@ -35,7 +38,7 @@ public final class ClientSorter {
 		}
 
 		for (List<Slot> slots : InventorySorter.sortGroups(menu, player.getInventory(), playerInventory, hotbarMode)) {
-			ClientSorter sorter = new ClientSorter();
+			ClientSorter sorter = new ClientSorter(sortMode);
 			for (Slot slot : slots) {
 				sorter.menuSlotIds.add(menu.slots.indexOf(slot));
 				sorter.simulated.add(slot.getItem().copy());
@@ -78,7 +81,7 @@ public final class ClientSorter {
 				goal.add(stack.copy());
 			}
 		}
-		goal = InventorySorter.mergeAndSort(goal);
+		goal = InventorySorter.mergeAndSort(goal, sortMode);
 
 		for (int i = 0; i < size && i < goal.size(); i++) {
 			ItemStack wanted = goal.get(i);

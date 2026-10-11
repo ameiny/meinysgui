@@ -2,11 +2,12 @@ package dev.meiny.meinysgui.sort;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import dev.meiny.meinysgui.network.SortPayload;
-import dev.meiny.meinysgui.network.SortPayloadV2;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -19,6 +20,7 @@ import net.minecraft.world.inventory.DispenserMenu;
 import net.minecraft.world.inventory.HopperMenu;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public final class InventorySorter {
@@ -31,9 +33,7 @@ public final class InventorySorter {
 
 	public static void init() {
 		PayloadTypeRegistry.serverboundPlay().register(SortPayload.TYPE, SortPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(SortPayloadV2.TYPE, SortPayloadV2.CODEC);
-		ServerPlayNetworking.registerGlobalReceiver(SortPayload.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory(), HotbarMode.IGNORE));
-		ServerPlayNetworking.registerGlobalReceiver(SortPayloadV2.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory(), payload.hotbarMode()));
+		ServerPlayNetworking.registerGlobalReceiver(SortPayload.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory(), payload.hotbarMode(), payload.sortMode()));
 	}
 
 	public static boolean isSortableContainer(AbstractContainerMenu menu) {
@@ -43,7 +43,7 @@ public final class InventorySorter {
 				|| menu instanceof DispenserMenu;
 	}
 
-	private static void sort(ServerPlayer player, boolean playerInventory, HotbarMode hotbarMode) {
+	private static void sort(ServerPlayer player, boolean playerInventory, HotbarMode hotbarMode, SortMode sortMode) {
 		if (player.isSpectator()) {
 			return;
 		}
@@ -58,7 +58,7 @@ public final class InventorySorter {
 
 		Set<Container> changedContainers = new HashSet<>();
 		for (List<Slot> slots : sortGroups(menu, player.getInventory(), playerInventory, hotbarMode)) {
-			sortSlots(slots, changedContainers);
+			sortSlots(slots, sortMode, changedContainers);
 		}
 
 		if (changedContainers.isEmpty()) {
@@ -69,7 +69,7 @@ public final class InventorySorter {
 		menu.broadcastChanges();
 	}
 
-	private static void sortSlots(List<Slot> slots, Set<Container> changedContainers) {
+	private static void sortSlots(List<Slot> slots, SortMode sortMode, Set<Container> changedContainers) {
 		if (slots.isEmpty()) {
 			return;
 		}
@@ -82,7 +82,7 @@ public final class InventorySorter {
 			}
 		}
 
-		List<ItemStack> sorted = mergeAndSort(stacks);
+		List<ItemStack> sorted = mergeAndSort(stacks, sortMode);
 		if (sorted.size() > slots.size()) {
 			return;
 		}
@@ -136,7 +136,7 @@ public final class InventorySorter {
 		return result;
 	}
 
-	public static List<ItemStack> mergeAndSort(List<ItemStack> stacks) {
+	public static List<ItemStack> mergeAndSort(List<ItemStack> stacks, SortMode sortMode) {
 		List<ItemStack> merged = new ArrayList<>();
 
 		for (ItemStack stack : stacks) {
@@ -155,11 +155,26 @@ public final class InventorySorter {
 			}
 		}
 
-		merged.sort(Comparator
-				.comparingInt((ItemStack s) -> BuiltInRegistries.ITEM.getId(s.getItem()))
-				.thenComparing((ItemStack s) -> s.getHoverName().getString())
-				.thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
-
+		merged.sort(comparator(merged, sortMode));
 		return merged;
+	}
+
+	private static Comparator<ItemStack> comparator(List<ItemStack> stacks, SortMode sortMode) {
+		Comparator<ItemStack> byId = Comparator.comparingInt((ItemStack s) -> BuiltInRegistries.ITEM.getId(s.getItem()));
+		Comparator<ItemStack> byName = Comparator.comparing((ItemStack s) -> s.getHoverName().getString(), String.CASE_INSENSITIVE_ORDER);
+		Comparator<ItemStack> byStackSize = Comparator.comparingInt(ItemStack::getCount).reversed();
+
+		return switch (sortMode) {
+			case DEFAULT -> byId.thenComparing(byName).thenComparing(byStackSize);
+			case NAME -> byName.thenComparing(byId).thenComparing(byStackSize);
+			case COUNT -> {
+				Map<Item, Integer> totals = new HashMap<>();
+				for (ItemStack stack : stacks) {
+					totals.merge(stack.getItem(), stack.getCount(), Integer::sum);
+				}
+				Comparator<ItemStack> byTotal = Comparator.comparingInt((ItemStack s) -> totals.get(s.getItem())).reversed();
+				yield byTotal.thenComparing(byId).thenComparing(byName).thenComparing(byStackSize);
+			}
+		};
 	}
 }
