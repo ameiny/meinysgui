@@ -7,18 +7,19 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
-public class SortButton extends Button.Plain {
+public class IconButton extends Button.Plain {
 	private static final int PRESSED_OVERLAY = 0x60000000;
-	private static final Identifier ICON = Identifier.fromNamespaceAndPath("meinysgui", "sort");
 	private static final int ICON_SIZE = 8;
 
+	private final Identifier icon;
 	private boolean pressed;
 
-	public SortButton(int size, Component tooltip, OnPress onPress) {
+	public IconButton(int size, Identifier icon, Component tooltip, OnPress onPress) {
 		super(0, 0, size, size, Component.empty(), button -> {
-			((SortButton) button).pressed = true;
+			((IconButton) button).pressed = true;
 			onPress.onPress(button);
 		}, DEFAULT_NARRATION);
+		this.icon = icon;
 		setTooltip(Tooltip.create(tooltip));
 	}
 
@@ -36,6 +37,6 @@ public class SortButton extends Button.Plain {
 
 		int iconX = getX() + (getWidth() - ICON_SIZE) / 2;
 		int iconY = getY() + (getHeight() - ICON_SIZE) / 2;
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ICON, iconX, iconY, ICON_SIZE, ICON_SIZE);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, iconX, iconY, ICON_SIZE, ICON_SIZE);
 	}
 }

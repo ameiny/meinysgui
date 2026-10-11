@@ -1,4 +1,8 @@
 {
 	"meinysgui.sort.container": "Sort container",
-	"meinysgui.sort.inventory": "Sort inventory"
+	"meinysgui.sort.inventory": "Sort inventory",
+	"meinysgui.deposit_all": "Deposit all",
+	"meinysgui.deposit_matching": "Deposit matching",
+	"meinysgui.take_all": "Take all",
+	"meinysgui.take_matching": "Take matching"
 }

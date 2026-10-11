@@ -1,4 +1,8 @@
 {
 	"meinysgui.sort.container": "Behälter sortieren",
-	"meinysgui.sort.inventory": "Inventar sortieren"
+	"meinysgui.sort.inventory": "Inventar sortieren",
+	"meinysgui.deposit_all": "Alles rein",
+	"meinysgui.deposit_matching": "Auffüllen",
+	"meinysgui.take_all": "Alles raus",
+	"meinysgui.take_matching": "Entnehmen"
 }
