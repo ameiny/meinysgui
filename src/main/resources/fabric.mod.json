@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "meinysgui",
+	"version": "${version}",
+	"name": "Meinys GUI",
+	"description": "Small quality-of-life tweaks for Minecraft’s inventory screens.\nStarting with a one-click sort button for chests and your inventory.\n\nStill work in progress :)",
+	"authors": [
+		"Meiny"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/mod/meinysgui",
+		"sources": "https://github.com/ameiny/meinysgui",
+		"issues": "https://github.com/ameiny/meinysgui/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/meinysgui/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"dev.meiny.meinysgui.MeinysGUI"
+		],
+		"client": [
+			"dev.meiny.meinysgui.client.MeinysGUIClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "meinysgui.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

@@ -1,0 +1,39 @@
+# Gradle
+.gradle
+**/build/
+!src/**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# Minecraft-Testumgebung (Welten, Logs, Configs aus runClient/runServer)
+run/
+
+# Kompilierte Dateien
+out/
+classes/
+bin/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini
