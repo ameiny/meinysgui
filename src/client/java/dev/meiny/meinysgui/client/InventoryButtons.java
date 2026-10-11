@@ -3,10 +3,11 @@ package dev.meiny.meinysgui.client;
 import java.util.ArrayList;
 import java.util.List;
 import dev.meiny.meinysgui.MeinysGUI;
+import dev.meiny.meinysgui.client.config.ButtonMode;
+import dev.meiny.meinysgui.client.config.ConfigScreen;
+import dev.meiny.meinysgui.client.config.MeinysGuiConfig;
 import dev.meiny.meinysgui.client.mixin.AbstractContainerScreenAccessor;
-import dev.meiny.meinysgui.network.SortPayload;
 import dev.meiny.meinysgui.sort.InventorySorter;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
@@ -29,6 +30,7 @@ public final class InventoryButtons {
 	private static final Identifier DEPOSIT_MATCHING_ICON = MeinysGUI.id("deposit_matching");
 	private static final Identifier TAKE_ALL_ICON = MeinysGUI.id("take_all");
 	private static final Identifier TAKE_MATCHING_ICON = MeinysGUI.id("take_matching");
+	private static final Identifier SETTINGS_ICON = MeinysGUI.id("settings");
 
 	private InventoryButtons() {
 	}
@@ -46,23 +48,31 @@ public final class InventoryButtons {
 			return;
 		}
 
+		ButtonMode buttonMode = MeinysGuiConfig.get().buttons;
+		boolean actions = buttonMode != ButtonMode.NONE;
 		boolean storage = InventorySorter.isSortableContainer(screen.getMenu());
 		boolean creative = screen instanceof CreativeModeInventoryScreen;
+		boolean transfer = storage && buttonMode == ButtonMode.ALL;
 
 		List<IconButton> containerRow = new ArrayList<>();
-		if (storage) {
-			containerRow.add(createButton(TAKE_ALL_ICON, "meinysgui.take_all", () -> ItemTransfer.takeAll(client)));
-			containerRow.add(createButton(TAKE_MATCHING_ICON, "meinysgui.take_matching", () -> ItemTransfer.takeMatching(client)));
-			containerRow.add(createButton(SORT_ICON, "meinysgui.sort.container", () -> sort(client, false)));
+		if (storage && actions) {
+			if (transfer) {
+				containerRow.add(createButton(TAKE_ALL_ICON, "meinysgui.take_all", () -> InventoryActions.takeAll(client)));
+				containerRow.add(createButton(TAKE_MATCHING_ICON, "meinysgui.take_matching", () -> InventoryActions.takeMatching(client)));
+			}
+			containerRow.add(createButton(SORT_ICON, "meinysgui.sort.container", () -> InventoryActions.sort(client, false)));
 		}
 
 		List<IconButton> inventoryRow = new ArrayList<>();
 		if (creative || findFirstInventorySlot(screen, client.player) != null) {
-			if (storage) {
-				inventoryRow.add(createButton(DEPOSIT_ALL_ICON, "meinysgui.deposit_all", () -> ItemTransfer.depositAll(client)));
-				inventoryRow.add(createButton(DEPOSIT_MATCHING_ICON, "meinysgui.deposit_matching", () -> ItemTransfer.depositMatching(client)));
+			if (transfer) {
+				inventoryRow.add(createButton(DEPOSIT_ALL_ICON, "meinysgui.deposit_all", () -> InventoryActions.depositAll(client)));
+				inventoryRow.add(createButton(DEPOSIT_MATCHING_ICON, "meinysgui.deposit_matching", () -> InventoryActions.depositMatching(client)));
 			}
-			inventoryRow.add(createButton(SORT_ICON, "meinysgui.sort.inventory", () -> sort(client, true)));
+			if (actions) {
+				inventoryRow.add(createButton(SORT_ICON, "meinysgui.sort.inventory", () -> InventoryActions.sort(client, true)));
+			}
+			inventoryRow.add(createButton(SETTINGS_ICON, "meinysgui.settings", () -> openSettings(client, screen)));
 		}
 
 		List<IconButton> buttons = new ArrayList<>();
@@ -97,18 +107,13 @@ public final class InventoryButtons {
 		return new IconButton(SIZE, icon, Component.translatable(translationKey), button -> action.run());
 	}
 
-	private static void sort(Minecraft client, boolean playerInventory) {
-		if (serverHasMod()) {
-			ClientPlayNetworking.send(new SortPayload(playerInventory));
-		} else if (playerInventory && client.gui.screen() instanceof CreativeModeInventoryScreen) {
-			CreativeSorter.sort(client);
+	private static void openSettings(Minecraft client, AbstractContainerScreen<?> screen) {
+		if (InventorySorter.isSortableContainer(screen.getMenu())) {
+			client.gui.setScreen(new ConfigScreen(screen));
 		} else {
-			ClientSorter.sort(client, playerInventory);
+			screen.onClose();
+			client.gui.setScreen(new ConfigScreen(null));
 		}
-	}
-
-	private static boolean serverHasMod() {
-		return ClientPlayNetworking.canSend(SortPayload.TYPE);
 	}
 
 	private static void updatePositions(Minecraft client, AbstractContainerScreen<?> screen, List<IconButton> containerRow, List<IconButton> inventoryRow) {

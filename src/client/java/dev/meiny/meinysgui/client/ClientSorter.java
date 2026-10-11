@@ -2,6 +2,7 @@ package dev.meiny.meinysgui.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import dev.meiny.meinysgui.sort.HotbarMode;
 import dev.meiny.meinysgui.sort.InventorySorter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
@@ -19,7 +20,7 @@ public final class ClientSorter {
 	private ClientSorter() {
 	}
 
-	public static void sort(Minecraft client, boolean playerInventory) {
+	public static void sort(Minecraft client, boolean playerInventory, HotbarMode hotbarMode) {
 		Player player = client.player;
 		if (player == null || client.gameMode == null || player.isSpectator()) {
 			return;
@@ -33,18 +34,20 @@ public final class ClientSorter {
 			return;
 		}
 
-		ClientSorter sorter = new ClientSorter();
-		for (Slot slot : InventorySorter.collectSlots(menu, player.getInventory(), playerInventory)) {
-			sorter.menuSlotIds.add(menu.slots.indexOf(slot));
-			sorter.simulated.add(slot.getItem().copy());
-		}
+		for (List<Slot> slots : InventorySorter.sortGroups(menu, player.getInventory(), playerInventory, hotbarMode)) {
+			ClientSorter sorter = new ClientSorter();
+			for (Slot slot : slots) {
+				sorter.menuSlotIds.add(menu.slots.indexOf(slot));
+				sorter.simulated.add(slot.getItem().copy());
+			}
 
-		if (!sorter.plan()) {
-			return;
-		}
+			if (!sorter.plan()) {
+				continue;
+			}
 
-		for (int slotId : sorter.clicks) {
-			client.gameMode.handleContainerInput(menu.containerId, slotId, 0, ContainerInput.PICKUP, player);
+			for (int slotId : sorter.clicks) {
+				client.gameMode.handleContainerInput(menu.containerId, slotId, 0, ContainerInput.PICKUP, player);
+			}
 		}
 	}
 

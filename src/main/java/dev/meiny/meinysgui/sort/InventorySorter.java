@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import dev.meiny.meinysgui.network.SortPayload;
+import dev.meiny.meinysgui.network.SortPayloadV2;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,15 +22,18 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public final class InventorySorter {
-	private static final int MAIN_INVENTORY_START = 9;
-	private static final int MAIN_INVENTORY_END = 36;
+	public static final int HOTBAR_START = 0;
+	public static final int MAIN_INVENTORY_START = 9;
+	public static final int MAIN_INVENTORY_END = 36;
 
 	private InventorySorter() {
 	}
 
 	public static void init() {
 		PayloadTypeRegistry.serverboundPlay().register(SortPayload.TYPE, SortPayload.CODEC);
-		ServerPlayNetworking.registerGlobalReceiver(SortPayload.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory()));
+		PayloadTypeRegistry.serverboundPlay().register(SortPayloadV2.TYPE, SortPayloadV2.CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(SortPayload.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory(), HotbarMode.IGNORE));
+		ServerPlayNetworking.registerGlobalReceiver(SortPayloadV2.TYPE, (payload, context) -> sort(context.player(), payload.playerInventory(), payload.hotbarMode()));
 	}
 
 	public static boolean isSortableContainer(AbstractContainerMenu menu) {
@@ -39,7 +43,7 @@ public final class InventorySorter {
 				|| menu instanceof DispenserMenu;
 	}
 
-	private static void sort(ServerPlayer player, boolean playerInventory) {
+	private static void sort(ServerPlayer player, boolean playerInventory, HotbarMode hotbarMode) {
 		if (player.isSpectator()) {
 			return;
 		}
@@ -52,7 +56,20 @@ public final class InventorySorter {
 			return;
 		}
 
-		List<Slot> slots = collectSlots(menu, player.getInventory(), playerInventory);
+		Set<Container> changedContainers = new HashSet<>();
+		for (List<Slot> slots : sortGroups(menu, player.getInventory(), playerInventory, hotbarMode)) {
+			sortSlots(slots, changedContainers);
+		}
+
+		if (changedContainers.isEmpty()) {
+			return;
+		}
+
+		changedContainers.forEach(Container::setChanged);
+		menu.broadcastChanges();
+	}
+
+	private static void sortSlots(List<Slot> slots, Set<Container> changedContainers) {
 		if (slots.isEmpty()) {
 			return;
 		}
@@ -70,31 +87,52 @@ public final class InventorySorter {
 			return;
 		}
 
-		Set<Container> changedContainers = new HashSet<>();
 		for (int i = 0; i < slots.size(); i++) {
 			Slot slot = slots.get(i);
 			ItemStack stack = i < sorted.size() ? sorted.get(i) : ItemStack.EMPTY;
 			slot.container.setItem(slot.getContainerSlot(), stack);
 			changedContainers.add(slot.container);
 		}
-
-		changedContainers.forEach(Container::setChanged);
-		menu.broadcastChanges();
 	}
 
-	public static List<Slot> collectSlots(AbstractContainerMenu menu, Inventory inventory, boolean playerInventory) {
+	public static List<List<Slot>> sortGroups(AbstractContainerMenu menu, Inventory inventory, boolean playerInventory, HotbarMode hotbarMode) {
+		if (!playerInventory) {
+			return List.of(collectContainerSlots(menu, inventory));
+		}
+
+		List<Slot> main = collectInventorySlots(menu, inventory, MAIN_INVENTORY_START, MAIN_INVENTORY_END);
+		List<Slot> hotbar = collectInventorySlots(menu, inventory, HOTBAR_START, MAIN_INVENTORY_START);
+
+		return switch (hotbarMode) {
+			case IGNORE -> List.of(main);
+			case INCLUDE -> {
+				List<Slot> all = new ArrayList<>(main);
+				all.addAll(hotbar);
+				yield List.of(all);
+			}
+			case SEPARATE -> List.of(main, hotbar);
+		};
+	}
+
+	public static List<Slot> collectContainerSlots(AbstractContainerMenu menu, Inventory inventory) {
 		List<Slot> result = new ArrayList<>();
 		for (Slot slot : menu.slots) {
-			boolean isPlayerSlot = slot.container == inventory;
-			if (playerInventory) {
-				int index = slot.getContainerSlot();
-				if (isPlayerSlot && index >= MAIN_INVENTORY_START && index < MAIN_INVENTORY_END) {
-					result.add(slot);
-				}
-			} else if (!isPlayerSlot) {
+			if (slot.container != inventory) {
 				result.add(slot);
 			}
 		}
+		return result;
+	}
+
+	public static List<Slot> collectInventorySlots(AbstractContainerMenu menu, Inventory inventory, int start, int end) {
+		List<Slot> result = new ArrayList<>();
+		for (Slot slot : menu.slots) {
+			int index = slot.getContainerSlot();
+			if (slot.container == inventory && index >= start && index < end) {
+				result.add(slot);
+			}
+		}
+		result.sort(Comparator.comparingInt(Slot::getContainerSlot));
 		return result;
 	}
 

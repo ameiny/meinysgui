@@ -12,28 +12,26 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public final class ItemTransfer {
-	private static final int INVENTORY_END = 36;
-
 	private ItemTransfer() {
 	}
 
-	public static void depositAll(Minecraft client) {
-		transfer(client, true, false);
+	public static void depositAll(Minecraft client, boolean includeHotbar) {
+		transfer(client, true, false, includeHotbar);
 	}
 
-	public static void depositMatching(Minecraft client) {
-		transfer(client, true, true);
+	public static void depositMatching(Minecraft client, boolean includeHotbar) {
+		transfer(client, true, true, includeHotbar);
 	}
 
 	public static void takeAll(Minecraft client) {
-		transfer(client, false, false);
+		transfer(client, false, false, false);
 	}
 
 	public static void takeMatching(Minecraft client) {
-		transfer(client, false, true);
+		transfer(client, false, true, false);
 	}
 
-	private static void transfer(Minecraft client, boolean toContainer, boolean matchingOnly) {
+	private static void transfer(Minecraft client, boolean toContainer, boolean matchingOnly, boolean includeHotbar) {
 		LocalPlayer player = client.player;
 		if (player == null || client.gameMode == null || player.isSpectator()) {
 			return;
@@ -45,8 +43,9 @@ public final class ItemTransfer {
 		}
 
 		Inventory inventory = player.getInventory();
-		List<Slot> playerSlots = InventorySorter.collectSlots(menu, inventory, true);
-		List<Slot> containerSlots = InventorySorter.collectSlots(menu, inventory, false);
+		int inventoryStart = includeHotbar ? InventorySorter.HOTBAR_START : InventorySorter.MAIN_INVENTORY_START;
+		List<Slot> playerSlots = InventorySorter.collectInventorySlots(menu, inventory, inventoryStart, InventorySorter.MAIN_INVENTORY_END);
+		List<Slot> containerSlots = InventorySorter.collectContainerSlots(menu, inventory);
 
 		List<Slot> sources = toContainer ? playerSlots : containerSlots;
 		List<ItemStack> targets = toContainer ? copyStacks(containerSlots) : copyInventory(inventory);
@@ -75,7 +74,7 @@ public final class ItemTransfer {
 
 	private static List<ItemStack> copyInventory(Inventory inventory) {
 		List<ItemStack> stacks = new ArrayList<>();
-		for (int i = 0; i < INVENTORY_END; i++) {
+		for (int i = InventorySorter.HOTBAR_START; i < InventorySorter.MAIN_INVENTORY_END; i++) {
 			ItemStack stack = inventory.getItem(i);
 			if (!stack.isEmpty()) {
 				stacks.add(stack.copy());

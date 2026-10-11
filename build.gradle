@@ -27,6 +27,7 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	// Other dependencies
+	clientCompileOnly "com.terraformersmc:modmenu:21.0.0"
 	localRuntime "com.terraformersmc:modmenu:21.0.0"
 }
 

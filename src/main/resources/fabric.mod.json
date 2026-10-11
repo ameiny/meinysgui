@@ -21,6 +21,9 @@
 		],
 		"client": [
 			"dev.meiny.meinysgui.client.MeinysGUIClient"
+		],
+		"modmenu": [
+			"dev.meiny.meinysgui.client.compat.ModMenuIntegration"
 		]
 	},
 	"mixins": [
